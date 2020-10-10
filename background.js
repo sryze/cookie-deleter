@@ -8,7 +8,7 @@ function getDomain(url) {
     }
 }
 
-function deleteCookies(cookies, callback) {
+function clearCookies(cookies, callback) {
     let deleteCount = 0;
 
     function removeCallback() {
@@ -32,12 +32,18 @@ function deleteCookies(cookies, callback) {
     }
 }
 
-function deleteCookiesForDomain(domain, callback) {
+function clearCookiesForDomain(domain, callback) {
     chrome.cookies.getAll({
         domain: domain
     }, cookies => {
-        deleteCookies(cookies, callback);
+        clearCookies(cookies, callback);
     });
+}
+
+function clearLocalStorage(tab, callback) {
+    chrome.tabs.executeScript(tab.id, {
+        code: 'localStorage.clear()'
+    }, callback);
 }
 
 function updateMenusInternal(activeTab) {
@@ -45,8 +51,8 @@ function updateMenusInternal(activeTab) {
         // Can happen if user switched to a chrome:// tab or something like this.
         return;
     }
-    chrome.contextMenus.update('delete', {
-        title: 'Delete cookies for ' + getDomain(activeTab.url)
+    chrome.contextMenus.update('clearCookies', {
+        title: 'Clear cookies for ' + getDomain(activeTab.url)
     });
 }
 
@@ -64,27 +70,49 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (!tab.active) {
         return;
     }
-    if (info.menuItemId == 'delete') {
-        try {
-            const domain = getDomain(tab.url);
-            deleteCookiesForDomain(domain, deletedCount => {
-                if (deletedCount == 0) {
-                    alert('No cookies found for ' + domain + '!');
-                } else {
-                    alert('Deleted ' + deletedCount + ' ' (deleteCount == 1 ? 'cookie' : 'cookies') + ' for ' + domain + '!');
-                    chrome.tabs.reload(tab.id);
-                }
-            });
-        } catch (e) {
-            alert('Error deleting cookies for ' + domain + ': ' + e.message);
+    switch (info.menuItemId) {
+        case 'clearCookies': {
+            try {
+                const domain = getDomain(tab.url);
+                clearCookiesForDomain(domain, deletedCount => {
+                    if (chrome.runtime.lastError) {
+                        alert('Error deleting cookies for ' + domain + ': ' + e.message);
+                    } else {
+                        if (deletedCount > 0) {
+                            chrome.tabs.reload(tab.id);
+                        }
+                    }
+                });
+            } catch (e) {
+                alert('Error deleting cookies for ' + domain + ': ' + e.message);
+            }
+            break;
         }
+        case 'clearLocalStorage':
+            try {
+                clearLocalStorage(tab, () => {
+                    if (chrome.runtime.lastError) {
+                        alert('Error clearing local storage: ' + e.message);
+                    } else {
+                        chrome.tabs.reload(tab.id);
+                    }
+                });
+            } catch (e) {
+                alert('Error clearing local storage: ' + e.message);
+            }
+            break;
     }
 });
 
 chrome.contextMenus.removeAll();
 chrome.contextMenus.create({
-    id: 'delete',
-    title: 'Delete cookies for this site',
+    id: 'clearCookies',
+    title: 'Clear all cookies for this site',
+    contexts: ['browser_action', 'page_action', 'action']
+});
+chrome.contextMenus.create({
+    id: 'clearLocalStorage',
+    title: 'Clear local storage',
     contexts: ['browser_action', 'page_action', 'action']
 });
 

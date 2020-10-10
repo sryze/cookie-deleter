@@ -9,9 +9,9 @@
         "128": "icon128.png"
     },
     "permissions": [
+        "*://*/*",
         "contextMenus",
-        "cookies",
-        "*://*/*"
+        "cookies"
     ],
     "background": {
         "scripts": [
