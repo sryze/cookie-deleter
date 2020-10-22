@@ -1,5 +1,8 @@
 let activeTabId = null;
 
+const browser = chrome;
+const contextMenus = chrome.contextMenus;
+
 function getDomain(url) {
     if (url instanceof URL) {
         return url.hostname;
@@ -23,7 +26,7 @@ function clearCookies(cookies, callback) {
         callback(0);
     } else {
         for (const cookie of cookies) {
-            chrome.cookies.remove({
+            browser.cookies.remove({
                 url: 'http://' + cookie.domain + cookie.path,
                 name: cookie.name,
                 storeId: cookie.storeId
@@ -33,7 +36,7 @@ function clearCookies(cookies, callback) {
 }
 
 function clearCookiesForDomain(domain, callback) {
-    chrome.cookies.getAll({
+    browser.cookies.getAll({
         domain: domain
     }, cookies => {
         clearCookies(cookies, callback);
@@ -41,17 +44,17 @@ function clearCookiesForDomain(domain, callback) {
 }
 
 function clearLocalStorage(tab, callback) {
-    chrome.tabs.executeScript(tab.id, {
+    browser.tabs.executeScript(tab.id, {
         code: 'localStorage.clear()'
     }, callback);
 }
 
 function updateMenusInternal(activeTab) {
-    if (!activeTab.url) {
+    if (!activeTab || !activeTab.url) {
         // Can happen if user switched to a chrome:// tab or something like this.
         return;
     }
-    chrome.contextMenus.update('clearCookies', {
+    contextMenus.update('clearCookies', {
         title: 'Clear cookies for ' + getDomain(activeTab.url)
     });
 }
@@ -60,26 +63,26 @@ function updateMenus(tab) {
     if (tab != null && tab.id == activeTabId) {
         updateMenusInternal(tab);
     } else if (activeTabId != null) {
-        chrome.tabs.get(activeTabId, tab => {
+        browser.tabs.get(activeTabId, tab => {
             updateMenusInternal(tab);
         });
     }
 }
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+contextMenus.onClicked.addListener((info, tab) => {
     if (!tab.active) {
         return;
     }
     switch (info.menuItemId) {
         case 'clearCookies': {
+            const domain = getDomain(tab.url);
             try {
-                const domain = getDomain(tab.url);
                 clearCookiesForDomain(domain, deletedCount => {
-                    if (chrome.runtime.lastError) {
+                    if (browser.runtime.lastError) {
                         alert('Error deleting cookies for ' + domain + ': ' + e.message);
                     } else {
                         if (deletedCount > 0) {
-                            chrome.tabs.reload(tab.id);
+                            browser.tabs.reload(tab.id);
                         }
                     }
                 });
@@ -91,10 +94,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         case 'clearLocalStorage':
             try {
                 clearLocalStorage(tab, () => {
-                    if (chrome.runtime.lastError) {
+                    if (browser.runtime.lastError) {
                         alert('Error clearing local storage: ' + e.message);
                     } else {
-                        chrome.tabs.reload(tab.id);
+                        browser.tabs.reload(tab.id);
                     }
                 });
             } catch (e) {
@@ -104,23 +107,23 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 });
 
-chrome.contextMenus.removeAll();
-chrome.contextMenus.create({
+contextMenus.removeAll();
+contextMenus.create({
     id: 'clearCookies',
     title: 'Clear all cookies for this site',
-    contexts: ['browser_action', 'page_action', 'action']
+    contexts: ['browser_action', 'page', 'page_action']
 });
-chrome.contextMenus.create({
+contextMenus.create({
     id: 'clearLocalStorage',
     title: 'Clear local storage',
-    contexts: ['browser_action', 'page_action', 'action']
+    contexts: ['browser_action', 'page', 'page_action']
 });
 
-chrome.tabs.onActivated.addListener(activeInfo => {
+browser.tabs.onActivated.addListener(activeInfo => {
     activeTabId = activeInfo.tabId;
     updateMenus();
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     updateMenus(tab);
 });
