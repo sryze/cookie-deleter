@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "Cookie Monster",
     "version": "1.0",
-    "description": "This extension lets you delete all cookies for the currently opened site (current tab).",
+    "description": "This extension lets you easily delete all cookies for current tab/site with a single click.",
     "icons": {
         "16": "icon16.png",
         "48": "icon48.png",
