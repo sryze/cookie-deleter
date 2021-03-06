@@ -1,7 +1,7 @@
 Cookie Monster Extension
 ========================
 
-This extension lets you delete all cookies for the currently opened site (current tab).
+This extension lets you easily delete all cookies for current tab/site with a single click.
 
 Credits
 =======
