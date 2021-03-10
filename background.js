@@ -55,7 +55,7 @@ function updateMenusInternal(activeTab) {
         return;
     }
     contextMenus.update('clearCookies', {
-        title: 'Clear cookies for ' + getDomain(activeTab.url)
+        title: 'Delete all cookies for ' + getDomain(activeTab.url)
     });
 }
 
@@ -110,7 +110,7 @@ contextMenus.onClicked.addListener((info, tab) => {
 contextMenus.removeAll();
 contextMenus.create({
     id: 'clearCookies',
-    title: 'Clear all cookies for this site',
+    title: 'Delete all cookies for this site',
     contexts: ['browser_action', 'page', 'page_action']
 });
 contextMenus.create({
