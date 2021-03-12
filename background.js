@@ -1,7 +1,7 @@
-let activeTabId = null;
-
 const browser = chrome;
 const contextMenus = chrome.contextMenus;
+
+let activeTabId = null;
 
 function getDomain(url) {
     if (url instanceof URL) {
@@ -11,7 +11,7 @@ function getDomain(url) {
     }
 }
 
-function clearCookies(cookies, callback) {
+function clearCookies(url, cookies, callback) {
     let deleteCount = 0;
 
     function removeCallback() {
@@ -26,8 +26,9 @@ function clearCookies(cookies, callback) {
         callback(0);
     } else {
         for (const cookie of cookies) {
+            console.debug('Removing cookie:', cookie);
             browser.cookies.remove({
-                url: 'http://' + cookie.domain + cookie.path,
+                url,
                 name: cookie.name,
                 storeId: cookie.storeId
             }, removeCallback);
@@ -35,11 +36,9 @@ function clearCookies(cookies, callback) {
     }
 }
 
-function clearCookiesForDomain(domain, callback) {
-    browser.cookies.getAll({
-        domain: domain
-    }, cookies => {
-        clearCookies(cookies, callback);
+function clearCookiesWithUrl(url, callback) {
+    browser.cookies.getAll({url}, cookies => {
+        clearCookies(url, cookies, callback);
     });
 }
 
@@ -70,16 +69,21 @@ function updateMenus(tab) {
 }
 
 contextMenus.onClicked.addListener((info, tab) => {
+    console.debug('Context menu item was clicked:', info.menuItemId);
+
     if (!tab.active) {
+        console.debug('No active tab found, ignoring context menu item click');
         return;
     }
+
+    console.log('Current tab URL:', tab.url);
+
     switch (info.menuItemId) {
         case 'clearCookies': {
-            const domain = getDomain(tab.url);
             try {
-                clearCookiesForDomain(domain, deletedCount => {
+                clearCookiesWithUrl(tab.url, deletedCount => {
                     if (browser.runtime.lastError) {
-                        alert('Error deleting cookies for ' + domain + ': ' + e.message);
+                        console.error('Error deleting cookies for ' + tab.url + ': ' + e.message);
                     } else {
                         if (deletedCount > 0) {
                             browser.tabs.reload(tab.id);
@@ -87,7 +91,7 @@ contextMenus.onClicked.addListener((info, tab) => {
                     }
                 });
             } catch (e) {
-                alert('Error deleting cookies for ' + domain + ': ' + e.message);
+                console.error('Error deleting cookies for ' + tab.url + ': ' + e.message);
             }
             break;
         }
@@ -95,13 +99,13 @@ contextMenus.onClicked.addListener((info, tab) => {
             try {
                 clearLocalStorage(tab, () => {
                     if (browser.runtime.lastError) {
-                        alert('Error clearing local storage: ' + e.message);
+                        console.error('Error clearing local storage: ' + e.message);
                     } else {
                         browser.tabs.reload(tab.id);
                     }
                 });
             } catch (e) {
-                alert('Error clearing local storage: ' + e.message);
+                console.error('Error clearing local storage: ' + e.message);
             }
             break;
     }
