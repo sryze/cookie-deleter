@@ -10,8 +10,8 @@
     },
     "permissions": [
         "*://*/*",
-        "contextMenus",
-        "cookies"
+        "cookies",
+        "contextMenus"
     ],
     "background": {
         "scripts": [
