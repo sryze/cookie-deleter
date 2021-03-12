@@ -42,24 +42,43 @@ function clearCookiesWithUrl(url, callback) {
     });
 }
 
-function clearLocalStorage(tab, callback) {
+function clearStorage(name, tab, callback) {
     browser.tabs.executeScript(tab.id, {
-        code: 'localStorage.clear()'
+        code: name + '.clear()'
     }, callback);
 }
 
 function updateMenusInternal(activeTab) {
     if (!activeTab || !activeTab.url) {
-        // Can happen if user switched to a chrome:// tab or something like this.
-        return;
+        // This can happen if user switched to a chrome:// tab or something like this.
+        contextMenus.update('clearCookies', {
+            title: 'Delete all cookies for this site',
+            enabled: false
+        });
+        contextMenus.update('clearLocalStorage', {
+            enabled: false
+        });
+        contextMenus.update('clearSessionStorage', {
+            enabled: false
+        });
+    } else {
+        contextMenus.update('clearCookies', {
+            title: 'Delete all cookies for ' + getDomain(activeTab.url),
+            enabled: true
+        });
+        contextMenus.update('clearLocalStorage', {
+            enabled: true
+        });
+        contextMenus.update('clearSessionStorage', {
+            enabled: true
+        });
     }
-    contextMenus.update('clearCookies', {
-        title: 'Delete all cookies for ' + getDomain(activeTab.url)
-    });
 }
 
 function updateMenus(tab) {
-    if (tab != null && tab.id == activeTabId) {
+    console.log('Updating menus for tab:', tab);
+
+    if (tab != null && tab.active) {
         updateMenusInternal(tab);
     } else if (activeTabId != null) {
         browser.tabs.get(activeTabId, tab => {
@@ -97,7 +116,7 @@ contextMenus.onClicked.addListener((info, tab) => {
         }
         case 'clearLocalStorage':
             try {
-                clearLocalStorage(tab, () => {
+                clearStorage('local', tab, () => {
                     if (browser.runtime.lastError) {
                         console.error('Error clearing local storage: ' + e.message);
                     } else {
@@ -106,6 +125,19 @@ contextMenus.onClicked.addListener((info, tab) => {
                 });
             } catch (e) {
                 console.error('Error clearing local storage: ' + e.message);
+            }
+            break;
+        case 'clearSessionStorage':
+            try {
+                clearStorage('session', tab, () => {
+                    if (browser.runtime.lastError) {
+                        console.error('Error clearing session storage: ' + e.message);
+                    } else {
+                        browser.tabs.reload(tab.id);
+                    }
+                });
+            } catch (e) {
+                console.error('Error clearing session storage: ' + e.message);
             }
             break;
     }
@@ -120,6 +152,11 @@ contextMenus.create({
 contextMenus.create({
     id: 'clearLocalStorage',
     title: 'Clear local storage',
+    contexts: ['browser_action', 'page', 'page_action']
+});
+contextMenus.create({
+    id: 'clearSessionStorage',
+    title: 'Clear session storage',
     contexts: ['browser_action', 'page', 'page_action']
 });
 
