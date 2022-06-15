@@ -1,5 +1,6 @@
-const browser = chrome;
-const contextMenus = chrome.contextMenus;
+const browser = typeof chrome != 'undefined' ? chrome : browser;;
+const browserNamespace = typeof chrome != 'undefined' ? 'chrome' : 'browser';
+const contextMenus = browser.contextMenus;
 
 let activeTabId = null;
 
@@ -42,10 +43,12 @@ function clearCookiesWithUrl(url, callback) {
     });
 }
 
-function clearStorage(name, tab, callback) {
-    browser.tabs.executeScript(tab.id, {
-        code: name + '.clear()'
-    }, callback);
+function clearLocalStorage(tab, callback) {
+    browser.tabs.executeScript(tab.id, {code: 'localStorage.clear()'}, callback);
+}
+
+function clearSessionStorage(tab, callback) {
+    browser.tabs.executeScript(tab.id, {code: 'sessionStorage.clear()'}, callback);
 }
 
 function updateMenusInternal(activeTab) {
@@ -116,7 +119,7 @@ contextMenus.onClicked.addListener((info, tab) => {
         }
         case 'clearLocalStorage':
             try {
-                clearStorage('local', tab, () => {
+                clearLocalStorage(tab, () => {
                     if (browser.runtime.lastError) {
                         console.error('Error clearing local storage: ' + e.message);
                     } else {
@@ -129,7 +132,7 @@ contextMenus.onClicked.addListener((info, tab) => {
             break;
         case 'clearSessionStorage':
             try {
-                clearStorage('session', tab, () => {
+                clearSessionStorage(tab, () => {
                     if (browser.runtime.lastError) {
                         console.error('Error clearing session storage: ' + e.message);
                     } else {
