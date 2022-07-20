@@ -52,30 +52,25 @@ function clearSessionStorage(tab, callback) {
 }
 
 function updateMenusInternal(activeTab) {
-    if (!activeTab || !activeTab.url) {
-        // This can happen if user switched to a chrome:// tab or something like this.
-        contextMenus.update('clearCookies', {
-            title: 'Delete all cookies for this site',
-            enabled: false
-        });
-        contextMenus.update('clearLocalStorage', {
-            enabled: false
-        });
-        contextMenus.update('clearSessionStorage', {
-            enabled: false
-        });
-    } else {
-        contextMenus.update('clearCookies', {
-            title: 'Delete all cookies for ' + getDomain(activeTab.url),
-            enabled: true
-        });
-        contextMenus.update('clearLocalStorage', {
-            enabled: true
-        });
-        contextMenus.update('clearSessionStorage', {
-            enabled: true
-        });
-    }
+    // URL may be blank if user switched to a chrome:// tab or something like that.
+    const hasUrl = !!activeTab && !!activeTab.url;
+    const siteName = hasUrl ? getDomain(activeTab.url) : 'this site';
+    const isMenuEnabled = hasUrl;
+    contextMenus.update('clearCookies', {
+        title: 'Clear cookies for ' + siteName,
+        enabled: isMenuEnabled
+    });
+    contextMenus.update('clearCookiesAndReload', {enabled: isMenuEnabled});
+    contextMenus.update('clearLocalStorage', {
+        title: 'Clear local storage for ' + siteName,
+        enabled: isMenuEnabled
+    });
+    contextMenus.update('clearLocalStorageAndReload', {enabled: isMenuEnabled});
+    contextMenus.update('clearSessionStorage', {
+        title: 'Clear session storage for ' + siteName,
+        enabled: isMenuEnabled
+    });
+    contextMenus.update('clearSessionStorageAndReload', {enabled: isMenuEnabled});
 }
 
 function updateMenus(tab) {
@@ -100,13 +95,17 @@ contextMenus.onClicked.addListener((info, tab) => {
 
     console.log('Current tab URL:', tab.url);
 
+    let reload = false;
+
     switch (info.menuItemId) {
-        case 'clearCookies': {
+        case 'clearCookiesAndReload':
+            reload = true;
+        case 'clearCookies':
             try {
                 clearCookiesWithUrl(tab.url, deletedCount => {
                     if (browser.runtime.lastError) {
                         console.error('Error deleting cookies for ' + tab.url + ': ' + e.message);
-                    } else {
+                    } else if (reload) {
                         if (deletedCount > 0) {
                             browser.tabs.reload(tab.id);
                         }
@@ -116,13 +115,14 @@ contextMenus.onClicked.addListener((info, tab) => {
                 console.error('Error deleting cookies for ' + tab.url + ': ' + e.message);
             }
             break;
-        }
+        case 'clearLocalStorageAndReload':
+            reload = true;
         case 'clearLocalStorage':
             try {
                 clearLocalStorage(tab, () => {
                     if (browser.runtime.lastError) {
                         console.error('Error clearing local storage: ' + e.message);
-                    } else {
+                    } else if (reload) {
                         browser.tabs.reload(tab.id);
                     }
                 });
@@ -130,12 +130,14 @@ contextMenus.onClicked.addListener((info, tab) => {
                 console.error('Error clearing local storage: ' + e.message);
             }
             break;
+        case 'clearSessionStorageAndReload':
+            reload = true;
         case 'clearSessionStorage':
             try {
                 clearSessionStorage(tab, () => {
                     if (browser.runtime.lastError) {
                         console.error('Error clearing session storage: ' + e.message);
-                    } else {
+                    } else if (reload) {
                         browser.tabs.reload(tab.id);
                     }
                 });
@@ -149,7 +151,12 @@ contextMenus.onClicked.addListener((info, tab) => {
 contextMenus.removeAll();
 contextMenus.create({
     id: 'clearCookies',
-    title: 'Delete all cookies for this site',
+    title: 'Clear cookies for this site',
+    contexts: ['browser_action', 'page', 'page_action']
+});
+contextMenus.create({
+    id: 'clearCookiesAndReload',
+    title: 'Clear cookies and reload',
     contexts: ['browser_action', 'page', 'page_action']
 });
 contextMenus.create({
@@ -158,8 +165,18 @@ contextMenus.create({
     contexts: ['browser_action', 'page', 'page_action']
 });
 contextMenus.create({
+    id: 'clearLocalStorageAndReload',
+    title: 'Clear local storage and reload',
+    contexts: ['browser_action', 'page', 'page_action']
+});
+contextMenus.create({
     id: 'clearSessionStorage',
     title: 'Clear session storage',
+    contexts: ['browser_action', 'page', 'page_action']
+});
+contextMenus.create({
+    id: 'clearSessionStorageAndReload',
+    title: 'Clear session storage and reload',
     contexts: ['browser_action', 'page', 'page_action']
 });
 
