@@ -1,3 +1,3 @@
 #!/bin/sh
 
-web-ext build --overwrite-dest
+web-ext build --ignore-files=scripts
