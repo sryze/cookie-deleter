@@ -1,4 +1,4 @@
-const browser = typeof chrome != 'undefined' ? chrome : browser;;
+const browser = typeof chrome != 'undefined' ? chrome : browser;
 const browserNamespace = typeof chrome != 'undefined' ? 'chrome' : 'browser';
 const contextMenus = browser.contextMenus;
 

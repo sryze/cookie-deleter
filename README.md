@@ -1,11 +1,15 @@
 Cookie Monster Extension
 ========================
 
-This extension lets you easily delete all cookies for current tab/site with a single click.
+This simple browser extension lets you quickly delete all cookies and clear the local/session
+storage for the currently open website.
+
+Supported browsers: Chrome, Firefox
 
 Credits
 =======
 
+Author: Sergey Zolotarev
 Cookie monster icon: [icons8.com](https://icons8.com/icons/set/cookie-monster)
 
 License
