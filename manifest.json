@@ -11,8 +11,7 @@
     "permissions": [
         "*://*/*",
         "cookies",
-        "contextMenus",
-        "storage"
+        "contextMenus"
     ],
     "background": {
         "scripts": [
