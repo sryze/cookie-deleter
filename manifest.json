@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "Cookie Monster",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "description": "Cookie Monster lets you easily clear cookies or local/session storage for the currently open website via a couple of clicks.",
     "icons": {
         "16": "icon16.png",
